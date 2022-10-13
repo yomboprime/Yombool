@@ -38180,9 +38180,11 @@
 	currentBrush,
 	currentMaterial,
 	evaluator,
+	addMeshButton,
 	subtractMeshButton ,
 	intersectMeshButton,
-	saveMeshButton;
+	saveMeshButton,
+	bellAudio;
 
 	function initApp() {
 
@@ -38223,6 +38225,7 @@
 		inputFiles.onchange = onFilesLoaded;
 
 		const contentDiv = document.createElement( 'div' );
+		contentDiv.innerHTML = '<a href="https://github.com/yomboprime/Yombool">Yombool home page: Go here.</a><br/>Bell sound by InspectorJ, Creative Commons Attribution 4.0';
 		contentDiv.style.position = "absolute";
 		contentDiv.style.top = "0px";
 		contentDiv.style.left = "0px";
@@ -38233,8 +38236,8 @@
 
 		const finalDiv = document.createElement( 'div' );
 		finalDiv.style.width = "100%";
-		const addMeshButton = document.createElement( 'button' );
 
+		addMeshButton = document.createElement( 'button' );
 		addMeshButton.innerHTML = "Add (union) a mesh...";
 		finalDiv.appendChild( addMeshButton );
 
@@ -38284,6 +38287,13 @@
 	}
 
 	function newMesh( op ) {
+
+		if ( ! bellAudio ) bellAudio = new Audio( 'bell.ogg' );
+
+		addMeshButton.disabled = true;
+		subtractMeshButton.disabled = true;
+		intersectMeshButton.disabled = true;
+		saveMeshButton.disabled = true;
 
 		operation = op;
 		inputFiles.click();
@@ -38345,6 +38355,8 @@
 
 		const newBrush = new Brush( geometry, currentMaterial );
 
+		let doNotify = true;
+
 		if ( currentBrush ) {
 
 			scene.remove( currentBrush );
@@ -38352,13 +38364,26 @@
 			currentBrush = evaluator.evaluate( currentBrush, newBrush, operation );
 
 		}
-		else currentBrush = newBrush;
+		else {
+
+			currentBrush = newBrush;
+			doNotify = false;
+
+		}
 
 		scene.add( currentBrush );
 
+		addMeshButton.disabled = false;
 		subtractMeshButton.disabled = false;
 		intersectMeshButton.disabled = false;
 		saveMeshButton.disabled = false;
+
+		if ( doNotify ) {
+
+			bellAudio.play();
+			alert( "Operation done." );
+
+		}
 
 	}
 
