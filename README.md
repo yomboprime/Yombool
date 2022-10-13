@@ -8,3 +8,8 @@ You can try it online here:
 ## License
 
 MIT License
+
+## Credits
+
+- three-bvh-csg: https://github.com/gkjohnson/three-bvh-csg
+- Three.js: https://github.com/mrdoob/three.js
