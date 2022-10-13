@@ -38175,6 +38175,7 @@
 	let camera,
 	renderer,
 	scene,
+	group,
 	operation,
 	inputFiles,
 	currentBrush,
@@ -38204,11 +38205,19 @@
 		scene = new Scene();
 		scene.background = new Color( 0x4f6fff );
 
+		group = new Group();
+		group.rotation.x = - Math.PI * 0.5;
+		scene.add( group );
+
 		currentMaterial = new MeshLambertMaterial();
 
 		const light = new DirectionalLight( );
 		light.position.set( 1, 2, 1.45 );
 		scene.add( light );
+
+		const light2 = new DirectionalLight( 0xFFFFFF, 0.7 );
+		light2.position.set( - 3, - 1.5, - 2 );
+		scene.add( light2 );
 
 		new OrbitControls( camera, renderer.domElement );
 
@@ -38343,14 +38352,14 @@
 
 		if ( currentBrush ) {
 
-			scene.remove( currentBrush );
+			group.remove( currentBrush );
 
 			currentBrush = evaluator.evaluate( currentBrush, newBrush, operation );
 
 		}
 		else currentBrush = newBrush;
 
-		scene.add( currentBrush );
+		group.add( currentBrush );
 
 		subtractMeshButton.disabled = false;
 		intersectMeshButton.disabled = false;
