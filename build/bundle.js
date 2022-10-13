@@ -38175,7 +38175,6 @@
 	let camera,
 	renderer,
 	scene,
-	group,
 	operation,
 	inputFiles,
 	currentBrush,
@@ -38204,10 +38203,6 @@
 
 		scene = new Scene();
 		scene.background = new Color( 0x4f6fff );
-
-		group = new Group();
-		group.rotation.x = - Math.PI * 0.5;
-		scene.add( group );
 
 		currentMaterial = new MeshLambertMaterial();
 
@@ -38352,14 +38347,14 @@
 
 		if ( currentBrush ) {
 
-			group.remove( currentBrush );
+			scene.remove( currentBrush );
 
 			currentBrush = evaluator.evaluate( currentBrush, newBrush, operation );
 
 		}
 		else currentBrush = newBrush;
 
-		group.add( currentBrush );
+		scene.add( currentBrush );
 
 		subtractMeshButton.disabled = false;
 		intersectMeshButton.disabled = false;
