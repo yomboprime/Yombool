@@ -26,13 +26,15 @@ controls,
 renderer,
 scene,
 operation,
+doCut,
 inputFiles,
 currentBrush,
-currentMaterial,
+currentSecondBrush,
 evaluator,
 addMeshButton,
 subtractMeshButton ,
 intersectMeshButton,
+cutMeshButton,
 saveMeshButton,
 bellAudio;
 
@@ -55,8 +57,6 @@ function initApp() {
 
 	scene = new Scene();
 	scene.background = new Color( 0x4f6fff );
-
-	currentMaterial = new MeshLambertMaterial();
 
 	const light = new DirectionalLight( );
 	light.position.set( 1, 2, 1.45 );
@@ -88,18 +88,23 @@ function initApp() {
 	finalDiv.style.width = "100%";
 
 	addMeshButton = document.createElement( 'button' );
-	addMeshButton.innerHTML = "Add (union) a mesh...";
+	addMeshButton.innerHTML = "Add (union) a STL mesh...";
 	finalDiv.appendChild( addMeshButton );
 
 	subtractMeshButton = document.createElement( 'button' );
-	subtractMeshButton.innerHTML = "Subtract a mesh...";
+	subtractMeshButton.innerHTML = "Subtract a STL mesh...";
 	subtractMeshButton.disabled = true;
 	finalDiv.appendChild( subtractMeshButton );
 
 	intersectMeshButton = document.createElement( 'button' );
-	intersectMeshButton.innerHTML = "Intersect a mesh...";
+	intersectMeshButton.innerHTML = "Intersect a STL mesh...";
 	intersectMeshButton.disabled = true;
 	finalDiv.appendChild( intersectMeshButton );
+
+	cutMeshButton = document.createElement( 'button' );
+	cutMeshButton.innerHTML = "Cut with a STL mesh...";
+	cutMeshButton.disabled = true;
+	finalDiv.appendChild( cutMeshButton );
 
 	saveMeshButton = document.createElement( 'button' );
 	saveMeshButton.innerHTML = "Save result to STL...";
@@ -111,12 +116,19 @@ function initApp() {
 	addMeshButton.onclick = () => { newMesh( ADDITION ); };
 	subtractMeshButton.onclick = () => { newMesh( SUBTRACTION ); };
 	intersectMeshButton.onclick = () => { newMesh( INTERSECTION ); };
+	cutMeshButton.onclick = () => { newMesh( SUBTRACTION, true ); };
 	saveMeshButton.onclick = saveSTL;
 
 	onWindowResize();
 	animate();
 
 };
+
+function newMaterial() {
+
+	return new MeshLambertMaterial( { color: Math.floor( Math.random() * 0xFFFFFF ) } );
+
+}
 
 function onWindowResize() {
 
@@ -137,16 +149,12 @@ function animate() {
 
 }
 
-function newMesh( op ) {
+function newMesh( op, cut ) {
 
 	if ( ! bellAudio ) bellAudio = new Audio( 'bell.ogg' );
 
-	addMeshButton.disabled = true;
-	subtractMeshButton.disabled = true;
-	intersectMeshButton.disabled = true;
-	saveMeshButton.disabled = true;
-
 	operation = op;
+	doCut = cut === true;
 	inputFiles.click();
 
 }
@@ -156,6 +164,12 @@ function onFilesLoaded( event ) {
 	const files = event.target.files;
 
 	if ( ! files || files.length === 0 ) return;
+
+	addMeshButton.disabled = true;
+	subtractMeshButton.disabled = true;
+	intersectMeshButton.disabled = true;
+	cutMeshButton.disabled = true;
+	saveMeshButton.disabled = true;
 
 	const file = files[ 0 ];
 
@@ -198,35 +212,51 @@ function parseSTLFile( fileContents, fileName ) {
 
 	}
 
-	performOperation( operation, geometry );
+	performOperation( operation, doCut, geometry );
 
 }
 
-function performOperation( operation, geometry ) {
-
-	const newBrush = new Brush( geometry, currentMaterial );
+function performOperation( operation, doCut, geometry ) {
 
 	let doNotify = true;
+
+	const newBrush = new Brush( geometry, newMaterial() );
+
+	let newCurrentBrush = null;
 
 	if ( currentBrush ) {
 
 		scene.remove( currentBrush );
 
-		currentBrush = evaluator.evaluate( currentBrush, newBrush, operation );
+		newCurrentBrush = evaluator.evaluate( currentBrush, newBrush, operation );
 
 	}
 	else {
 
-		currentBrush = newBrush;
+		newCurrentBrush = newBrush;
 		doNotify = false;
 
 	}
 
-	scene.add( currentBrush );
+	scene.add( newCurrentBrush );
+
+	if ( currentSecondBrush ) scene.remove( currentSecondBrush );
+
+	if ( doCut ) {
+
+		currentBrush.material = newMaterial();
+		currentSecondBrush = evaluator.evaluate( currentBrush, newBrush, INTERSECTION );
+		scene.add( currentSecondBrush );
+
+	}
+	else currentSecondBrush = null;
+
+	currentBrush = newCurrentBrush;
 
 	addMeshButton.disabled = false;
 	subtractMeshButton.disabled = false;
 	intersectMeshButton.disabled = false;
+	cutMeshButton.disabled = false;
 	saveMeshButton.disabled = false;
 
 	if ( doNotify ) {
@@ -244,7 +274,18 @@ function saveSTL() {
 
 	const exporter = new STLExporter();
 	const data = exporter.parse( currentBrush, { binary: true } );
-	saveFile( "output.stl", new Blob( [ data ], { type: "model/stl" } ) );
+
+	if ( currentSecondBrush ) {
+
+		const data2 = exporter.parse( currentSecondBrush, { binary: true } );
+		saveFile( "output_part_2.stl", new Blob( [ data2 ], { type: "model/stl" } ) );
+		scene.remove( currentSecondBrush );
+		currentSecondBrush = null;
+
+		saveFile( "output_part_1.stl", new Blob( [ data ], { type: "model/stl" } ) );
+
+	}
+	else saveFile( "output.stl", new Blob( [ data ], { type: "model/stl" } ) );
 
 }
 
