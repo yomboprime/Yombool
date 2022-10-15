@@ -38275,7 +38275,7 @@
 	}
 	function newMaterial() {
 
-		return new MeshLambertMaterial( { color: Math.floor( Math.random() * 0xFFFFFF ) } );
+		return new MeshLambertMaterial( { color: new Color( Math.random(), Math.random(), Math.random() ).getHex() } );
 
 	}
 
